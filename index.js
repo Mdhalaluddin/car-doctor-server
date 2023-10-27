@@ -31,7 +31,6 @@ async function run() {
             const cursor = carCollection.find();
             const result = await cursor.toArray();
             res.send(result);
-
         })
 
         app.get('/services/:id', async (req, res) => {
