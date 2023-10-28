@@ -62,6 +62,29 @@ async function run() {
             const result = await bookingCollection.insertOne(booking);
             res.send(result) 
         })
+        // delete services
+        app.delete('/bookings/:id', async(req, res)=>{
+            const id = req.params.id;
+            console.log(id);
+            const query = {_id: new ObjectId(id)}
+            const result = await bookingCollection.deleteOne(query);
+            res.send(result)
+        })
+        // booking services update
+        app.patch('/bookings/:id', async(req, res)=>{
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)}
+            const bookingUpdate = req.body;
+            console.log(bookingUpdate);
+            const updateDoc = {
+                $set: {
+                  status: bookingUpdate.status
+                },
+              };
+          const result = await bookingCollection.updateOne(filter, updateDoc);
+          res.send(result);
+            
+        })
 
 
         // Connect the client to the server	(optional starting in v4.7)
