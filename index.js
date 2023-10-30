@@ -1,12 +1,16 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors())
+app.use(cors({
+    origin: ['http://localhost:5173/'], 
+    credentials: true 
+}))
 app.use(express.json());
 
 
@@ -28,6 +32,20 @@ async function run() {
         const carCollection = client.db('carDoctors').collection('services');
         const bookingCollection = client.db('carDoctors').collection('bookings');
 
+        // auth related api
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            console.log(user);
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res
+                .cookie('token', token,{
+                    httpOnly: true,
+                    secure: false, //localhost:5173/login
+                })
+                .send({success: true})
+        })
+
+        // services related api
         app.get('/services', async (req, res) => {
             const cursor = carCollection.find();
             const result = await cursor.toArray();
@@ -46,44 +64,44 @@ async function run() {
             res.send(result);
         })
         // car service booking section
-        app.get('/bookings', async (req,res)=>{
+        app.get('/bookings', async (req, res) => {
             console.log(req.query.email);
-            let query ={};
-            if(req.query?.email){
-                query={email: req.query.email}
+            let query = {};
+            if (req.query?.email) {
+                query = { email: req.query.email }
             }
             const result = await bookingCollection.find(query).toArray();
             res.send(result)
         })
 
-        app.post("/bookings", async(req, res)=>{
+        app.post("/bookings", async (req, res) => {
             const booking = req.body;
             console.log(booking);
             const result = await bookingCollection.insertOne(booking);
-            res.send(result) 
+            res.send(result)
         })
         // delete services
-        app.delete('/bookings/:id', async(req, res)=>{
+        app.delete('/bookings/:id', async (req, res) => {
             const id = req.params.id;
             console.log(id);
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await bookingCollection.deleteOne(query);
             res.send(result)
         })
         // booking services update
-        app.patch('/bookings/:id', async(req, res)=>{
+        app.patch('/bookings/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)}
+            const filter = { _id: new ObjectId(id) }
             const bookingUpdate = req.body;
             console.log(bookingUpdate);
             const updateDoc = {
                 $set: {
-                  status: bookingUpdate.status
+                    status: bookingUpdate.status
                 },
-              };
-          const result = await bookingCollection.updateOne(filter, updateDoc);
-          res.send(result);
-            
+            };
+            const result = await bookingCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
         })
 
 
