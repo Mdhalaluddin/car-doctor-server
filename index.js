@@ -9,24 +9,24 @@ const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors({
-    origin: ['http://localhost:5173'], 
-    credentials: true 
+    origin: ['http://localhost:5173'],
+    credentials: true
 }))
 app.use(express.json());
 app.use(cookieParser())
 
 
 
-const verifyToken = async(req, res, next)=>{
+const verifyToken = async (req, res, next) => {
     const token = req.cookies?.token;
-    if(!token){
-        return res.status(401).send({message: 'unauthorized access'})
+    if (!token) {
+        return res.status(401).send({ message: 'unauthorized access' })
     }
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
-        if(err){
-            return res.status(401).send({message: 'unauthorized access'})
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized access' })
         }
-        req.user= decoded;
+        req.user = decoded;
         next()
     })
 }
@@ -53,18 +53,32 @@ async function run() {
             console.log(user);
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
             res
-                .cookie('token', token,{
+                .cookie('token', token, {
                     httpOnly: true,
                     secure: false, //localhost:5173/login
                 })
-                .send({success: true})
+                .send({ success: true })
         })
 
         // services related api
-        app.get('/services',  async (req, res) => {
-            const cursor = carCollection.find();
+        app.get('/services', async (req, res) => {
+            const filter = req.query;
+            console.log(filter);
+            const query = {
+                title: {$regex: filter.search, $options: 'i'}
+                // title: { $regex: filter.search, $options: 'i' }
+                // price: { $lt: 100 }
+            };
+            const options = {
+                sort: {
+                    price: filter.sort === 'asc' ? 1 : -1
+                }
+            }
+
+            const cursor = carCollection.find(query, options);
             const result = await cursor.toArray();
             res.send(result);
+            console.log(result);
         })
 
         app.get('/services/:id', async (req, res) => {
@@ -83,8 +97,8 @@ async function run() {
             console.log(req.query.email);
             // console.log('tok tok token', req.cookies.token);
             console.log('user in the valid token', req.user);
-            if(req.query.email !== req.user.email){
-                return res.status(403).send({message: 'forbidden access'})
+            if (req.query.email !== req.user.email) {
+                return res.status(403).send({ message: 'forbidden access' })
             }
             let query = {};
             if (req.query?.email) {
